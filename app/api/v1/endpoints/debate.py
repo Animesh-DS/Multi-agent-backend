@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from app.schemas.debate_schemas import (
     StartDebateRequest, 
@@ -10,19 +10,30 @@ from app.services.debate_engine import generate_debate_stream, debates_db, trans
 
 router = APIRouter()
 
+debate_configs_db = {}
+
 @router.post("/start-debate", response_model=StartDebateResponse)
 async def start_debate(request: StartDebateRequest):
     debate_id = f"deb_{uuid.uuid4().hex[:8]}"
-    # Initialize DB state here
-    transcripts_db[debate_id] = []
     
+    debate_configs_db[debate_id] = request.rounds
     return StartDebateResponse(debate_id=debate_id, status="started")
 
 @router.get("/stream-debate/{debate_id}")
-async def stream_debate(debate_id: str):
+async def stream_debate(debate_id: str,rounds: int = Query(1, description="Number of debate rounds")):
     # Pass arbitrary problem_id and rounds for the mock
+    rounds = debate_configs_db.get(debate_id, 1)
+    
     generator = generate_debate_stream(debate_id, problem_id="mock_prob", rounds=2)
-    return StreamingResponse(generator, media_type="text/event-stream")
+    return StreamingResponse(
+        generator, 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no" # Prevents Nginx/Proxies from buffering the stream
+        }
+    )
 
 @router.get("/result/{debate_id}", response_model=DebateResultResponse)
 async def get_result(debate_id: str):

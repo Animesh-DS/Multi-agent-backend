@@ -10,12 +10,21 @@ transcripts_db = {}
 
 async def generate_debate_stream(debate_id: str, problem_id: str, rounds: int):
     """Yields SSE payloads formatted exactly to the frontend contract."""
+
+    if debate_id in transcripts_db:
+        error_payload = json.dumps({"message": "Debate already running or completed."})
+        yield f"event: error\ndata: {error_payload}\n\n"
+        return
+    
+
     agents = ["aria", "rex", "nova", "zara"]
     transcripts_db[debate_id] = []
     
     try:
         for r in range(1, rounds + 1):
             for i, agent in enumerate(agents):
+
+                
                 # 1. Yield Turn Event (Event 1)
                 turn_data = DebateTurnData(
                     turn_id=f"turn_{uuid.uuid4().hex[:8]}",

@@ -8,14 +8,14 @@ app = FastAPI(title="Multi-Agent Debate Backend")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False, 
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Mount Routers
-# app.include_router(upload.router, prefix="/api/v1") 
-app.include_router(debate.router, prefix="/api/v1")
+# app.include_router(upload.router, prefix="/api") 
+app.include_router(debate.router, prefix="/api")
 
 @app.get("/")
 def health_check():
